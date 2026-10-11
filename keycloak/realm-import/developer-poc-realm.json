@@ -1,0 +1,49 @@
+{
+  "realm": "developer-poc",
+  "enabled": true,
+  "displayName": "Developer Portal POC",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "developer-portal",
+      "name": "Developer Portal",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:8080/*", "http://localhost:8083/*"],
+      "webOrigins": ["http://localhost:8080", "http://localhost:8083"]
+    },
+    {
+      "clientId": "claims-api",
+      "name": "Claims API",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "claims-api-dev-secret",
+      "protocol": "openid-connect",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "developer",
+      "enabled": true,
+      "email": "developer@example.local",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Developer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "developer_dev_only",
+          "temporary": true
+        }
+      ]
+    }
+  ]
+}

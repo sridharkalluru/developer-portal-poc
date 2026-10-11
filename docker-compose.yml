@@ -1,0 +1,105 @@
+services:
+  drupal-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: drupal
+      POSTGRES_USER: drupal
+      POSTGRES_PASSWORD: drupal_dev_only
+    volumes:
+      - drupal_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drupal -d drupal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  drupal:
+    image: drupal:11-apache
+    depends_on:
+      drupal-db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      # These are documentation values for the Drupal installer; complete installation in browser.
+      DRUPAL_DB_HOST: drupal-db
+    volumes:
+      - drupal_files:/var/www/html/sites/default/files
+
+  keycloak-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak_dev_only
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3
+    command: ["start-dev", "--import-realm"]
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_dev_only
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev_only
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: localhost
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/realm-import:/opt/keycloak/data/import:ro
+
+  claims-api:
+    build:
+      context: ./claims-api
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.30.2
+    depends_on:
+      - claims-api
+    ports:
+      - "8083:8080"
+    environment:
+      SWAGGER_JSON: /spec/openapi.yaml
+      BASE_URL: /
+      DEEP_LINKING: "true"
+      DISPLAY_REQUEST_DURATION: "true"
+    volumes:
+      - ./specs:/spec:ro
+
+  # Lightweight all-in-one Microcks instance for local API mocking and testing.
+  microcks:
+    image: quay.io/microcks/microcks-uber:1.15.0-native
+    ports:
+      - "8585:8080"
+    environment:
+      JAVA_OPTIONS: "-Xmx512m"
+    profiles: ["microcks"]
+
+  # Optional GitLab Runner. Register it against your own GitLab instance before use.
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine
+    profiles: ["ci"]
+    volumes:
+      - ./gitlab-runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  drupal_db_data:
+  drupal_files:
+  keycloak_db_data:

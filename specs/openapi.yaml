@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: Claims API
+  version: 1.0.0
+  description: Sample API used by the Developer Portal POC.
+servers:
+  - url: http://localhost:8082
+tags:
+  - name: Claims
+paths:
+  /api/claims:
+    get:
+      tags: [Claims]
+      operationId: listClaims
+      summary: List sample claims
+      responses:
+        "200":
+          description: Claims returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Claim"
+    post:
+      tags: [Claims]
+      operationId: createClaim
+      summary: Create a sample claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewClaim"
+      responses:
+        "201":
+          description: Claim created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+components:
+  schemas:
+    Claim:
+      type: object
+      required: [id, status, description]
+      properties:
+        id:
+          type: string
+          examples: ["CLM-1001"]
+        status:
+          type: string
+          enum: [OPEN, CLOSED, PENDING]
+        description:
+          type: string
+    NewClaim:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
